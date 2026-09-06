@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Bytes, BytesN, Vec};
+use soroban_sdk::{contracttype, BytesN, Vec, Bytes};
 
 /// Which TEE technology produced this quote. Intel TDX is the one SDF's own
 /// dark pool prototype (and Phala Cloud) actually uses — see
@@ -11,37 +11,20 @@ pub enum TeeType {
     IntelSgx,
 }
 
-/// A hardware attestation quote, as produced by the TEE. This is the thing
-/// SDF's prototype currently verifies client-side (in the browser) — this
-/// contract verifies it on-chain instead. See stellaridea2.md §3.2, §4.1.
-#[contracttype]
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct AttestationQuote {
-    pub tee_type: TeeType,
-    /// Hash of the code running inside the enclave (MRTD for TDX / MRENCLAVE
-    /// for SGX). This is what `verify_quote` checks against the expected,
-    /// allow-listed measurement of the real matching engine code.
-    pub measurement: BytesN<32>,
-    /// Application-specific data bound into the quote — e.g. a hash of the
-    /// enclave's ephemeral TLS/signing public key, so the caller can prove
-    /// "this specific attested enclave, not just some TDX enclave somewhere,
-    /// generated this."
-    pub report_data: BytesN<64>,
-    /// Raw certificate chain from the quote's signing key up to Intel's
-    /// Root CA. Real content/format TODO — see M1 in attest-hackathon-plan.md
-    /// day 3-5: this starts as a single-signature check and is extended
-    /// toward a full chain as time allows.
-    pub signature_chain: Vec<Bytes>,
-    pub timestamp: u64,
-}
-
 #[contracttype]
 pub enum DataKey {
-    /// Measurement hash we consider "the real matching engine" — set once
-    /// at deploy/config time by the contract admin.
+    /// Measurement we consider "the real matching engine", set once at
+    /// `initialize` time by the admin. Stored as `Bytes` (not a fixed-size
+    /// BytesN) because it's compared directly against a slice of the raw
+    /// signed payload — see `lib.rs::verify_quote`.
     ExpectedMeasurement,
-    /// Registered verified enclaves: report_data hash -> registration record.
+    /// Registered verified enclaves: enclave_id -> registration record.
     VerifiedEnclave(BytesN<32>),
+    /// Reserved for the full signature-chain-to-Root-CA stretch goal
+    /// (attest-hackathon-plan.md §3/§5) — not used by the current
+    /// single-signature check.
+    #[allow(dead_code)]
+    SignatureChain(BytesN<32>),
 }
 
 #[contracttype]
@@ -50,3 +33,10 @@ pub struct VerifiedEnclave {
     pub tee_type: TeeType,
     pub verified_at: u64,
 }
+
+/// Placeholder for the full certificate chain a quote's signing key would
+/// carry up to Intel's Root CA. Not consulted by the current single-
+/// signature check (see attest-hackathon-plan.md's Root-CA stretch goal) —
+/// kept here so the type is ready when that work starts.
+#[allow(dead_code)]
+pub type SignatureChain = Vec<Bytes>;

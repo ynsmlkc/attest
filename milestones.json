@@ -1,0 +1,153 @@
+{
+  "room": {
+    "cols": 12,
+    "rows": 10,
+    "floorType": 1
+  },
+  "milestones": [
+    {
+      "id": "attestation-verifier",
+      "name": "Attestation Verifier (testnet'te deploy)",
+      "completed": true,
+      "furniture": [
+        {
+          "type": "DESK_FRONT",
+          "col": 2,
+          "row": 2
+        },
+        {
+          "type": "PC_FRONT_OFF",
+          "col": 3,
+          "row": 2
+        },
+        {
+          "type": "WOODEN_CHAIR_SIDE",
+          "col": 3,
+          "row": 4
+        }
+      ]
+    },
+    {
+      "id": "real-quote-verification",
+      "name": "Gercek Intel Attestation Quote Dogrulama",
+      "completed": false,
+      "furniture": [
+        {
+          "type": "DESK_FRONT",
+          "col": 6,
+          "row": 2
+        },
+        {
+          "type": "PC_FRONT_OFF",
+          "col": 7,
+          "row": 2
+        },
+        {
+          "type": "WOODEN_CHAIR_SIDE",
+          "col": 7,
+          "row": 4
+        }
+      ]
+    },
+    {
+      "id": "root-ca-chain",
+      "name": "Root-CA Imza Zinciri (stretch goal)",
+      "completed": false,
+      "furniture": [
+        {
+          "type": "CLOCK",
+          "col": 5,
+          "row": 0
+        },
+        {
+          "type": "BOOKSHELF",
+          "col": 2,
+          "row": 6
+        }
+      ]
+    },
+    {
+      "id": "settlement-vault",
+      "name": "SettlementVault Kontrati",
+      "completed": false,
+      "furniture": [
+        {
+          "type": "PLANT",
+          "col": 9,
+          "row": 7
+        },
+        {
+          "type": "SMALL_PAINTING",
+          "col": 9,
+          "row": 0
+        }
+      ]
+    },
+    {
+      "id": "tee-deployment",
+      "name": "Phala Cloud'da TEE Deployment",
+      "completed": false,
+      "newCols": 19,
+      "tilePatches": {
+        "wallRows": [
+          0,
+          9
+        ],
+        "wallCols": [
+          18
+        ],
+        "floorArea": {
+          "colStart": 12,
+          "colEnd": 17,
+          "rowStart": 1,
+          "rowEnd": 8,
+          "floorType": 5
+        },
+        "doorway": [
+          {
+            "col": 11,
+            "row": 4,
+            "floorType": 1
+          },
+          {
+            "col": 11,
+            "row": 5,
+            "floorType": 1
+          }
+        ]
+      },
+      "furniture": [
+        {
+          "type": "SOFA_FRONT",
+          "col": 14,
+          "row": 3
+        },
+        {
+          "type": "SOFA_SIDE",
+          "col": 13,
+          "row": 4
+        },
+        {
+          "type": "SOFA_BACK",
+          "col": 14,
+          "row": 6
+        },
+        {
+          "type": "SOFA_SIDE:left",
+          "col": 16,
+          "row": 4
+        },
+        {
+          "type": "COFFEE_TABLE",
+          "col": 14,
+          "row": 4
+        },
+        {
+          "type": "LARGE_PAINTING",
+          "col": 14,
+          "row": 0
+        }
+      ]
+    }
+  ]
+}
