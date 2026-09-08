@@ -545,6 +545,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "demo-token"
+version = "0.0.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "der"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1457,6 +1464,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.119",
+]
+
+[[package]]
+name = "settlement-vault"
+version = "0.0.0"
+dependencies = [
+ "attestation-verifier",
+ "hex",
+ "soroban-sdk",
 ]
 
 [[package]]

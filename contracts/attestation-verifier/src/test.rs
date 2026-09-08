@@ -105,6 +105,7 @@ fn register_verified_enclave_requires_a_valid_quote() {
     let env = Env::default();
     let (client, quote) = setup(&env);
     let enclave_id = BytesN::<32>::from_array(&env, &[7u8; 32]);
+    let engine = Address::generate(&env);
 
     assert!(!client.is_registered(&enclave_id));
 
@@ -113,8 +114,19 @@ fn register_verified_enclave_requires_a_valid_quote() {
         &quote.payload,
         &quote.signature,
         &enclave_id,
+        &engine,
     );
     assert!(client.is_registered(&enclave_id));
+    assert_eq!(client.get_engine_address(&enclave_id), Some(engine));
+}
+
+#[test]
+fn get_engine_address_returns_none_for_unknown_enclave() {
+    let env = Env::default();
+    let (client, _quote) = setup(&env);
+    let enclave_id = BytesN::<32>::from_array(&env, &[42u8; 32]);
+
+    assert_eq!(client.get_engine_address(&enclave_id), None);
 }
 
 #[test]
@@ -128,12 +140,14 @@ fn register_verified_enclave_rejects_fake_data() {
     let mut tampered = quote.payload.clone();
     let flipped = tampered.get(0).unwrap() ^ 0xFF;
     tampered.set(0, flipped);
+    let engine = Address::generate(&env);
 
     let result = client.try_register_verified_enclave(
         &TeeType::IntelTdx,
         &tampered,
         &quote.signature,
         &enclave_id,
+        &engine,
     );
     assert!(result.is_err());
     assert!(!client.is_registered(&enclave_id));

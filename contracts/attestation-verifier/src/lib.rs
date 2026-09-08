@@ -3,7 +3,8 @@
 mod types;
 
 use soroban_sdk::{contract, contracterror, contractimpl, Address, Bytes, BytesN, Env};
-use types::{DataKey, TeeType, VerifiedEnclave};
+use types::{DataKey, VerifiedEnclave};
+pub use types::TeeType;
 
 #[contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
@@ -87,21 +88,28 @@ impl AttestationVerifier {
     /// itself rather than trusting that the caller already called
     /// `verify_quote` honestly.
     ///
-    /// Deliberately permissionless (no `require_auth`) — that's the point:
+    /// Verification of the quote itself is deliberately permissionless —
     /// *anyone* holding a genuinely valid, Intel-signed quote can register
-    /// it. Trust comes from the signature check, not from who's calling.
+    /// it. But `engine_address` — the wallet SettlementVault will later
+    /// trust to move funds on this enclave's behalf — does require auth:
+    /// otherwise anyone could register a valid quote with someone else's
+    /// address attached, squatting the enclave_id before its real operator
+    /// gets to.
     pub fn register_verified_enclave(
         env: Env,
         tee_type: TeeType,
         payload: Bytes,
         signature: BytesN<64>,
         enclave_id: BytesN<32>,
+        engine_address: Address,
     ) -> Result<(), Error> {
+        engine_address.require_auth();
         Self::check_payload(&env, &payload, &signature)?;
 
         let record = VerifiedEnclave {
             tee_type,
             verified_at: env.ledger().timestamp(),
+            engine_address,
         };
         env.storage()
             .persistent()
@@ -114,6 +122,16 @@ impl AttestationVerifier {
         env.storage()
             .persistent()
             .has(&DataKey::VerifiedEnclave(enclave_id))
+    }
+
+    /// The wallet address authorized to act on a registered enclave's
+    /// behalf, or `None` if `enclave_id` was never registered.
+    /// SettlementVault::settle calls this and requires the caller to match.
+    pub fn get_engine_address(env: Env, enclave_id: BytesN<32>) -> Option<Address> {
+        env.storage()
+            .persistent()
+            .get::<_, VerifiedEnclave>(&DataKey::VerifiedEnclave(enclave_id))
+            .map(|record| record.engine_address)
     }
 
     /// Shared verification core for `verify_quote` and

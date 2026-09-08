@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, BytesN, Vec, Bytes};
+use soroban_sdk::{contracttype, Address, BytesN, Vec, Bytes};
 
 /// Which TEE technology produced this quote. Intel TDX is the one SDF's own
 /// dark pool prototype (and Phala Cloud) actually uses — see
@@ -32,6 +32,11 @@ pub enum DataKey {
 pub struct VerifiedEnclave {
     pub tee_type: TeeType,
     pub verified_at: u64,
+    /// The Stellar address this enclave's operator will sign settlement
+    /// transactions with. SettlementVault checks a caller against this
+    /// field (via `AttestationVerifier::get_engine_address`) before
+    /// trusting it to move vault balances — see settlement-vault crate.
+    pub engine_address: Address,
 }
 
 /// Placeholder for the full certificate chain a quote's signing key would
