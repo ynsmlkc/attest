@@ -69,7 +69,7 @@
     {
       "id": "settlement-vault",
       "name": "SettlementVault Kontrati",
-      "completed": false,
+      "completed": true,
       "furniture": [
         {
           "type": "PLANT",
@@ -86,7 +86,7 @@
     {
       "id": "tee-deployment",
       "name": "Phala Cloud'da TEE Deployment",
-      "completed": false,
+      "completed": true,
       "newCols": 19,
       "tilePatches": {
         "wallRows": [
