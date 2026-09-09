@@ -152,6 +152,18 @@ account with no USDC trustline yet now surfaces as SEP-6 status
 `pending_trust` instead of hanging or erroring — confirmed live by
 depositing to a fresh account before and after adding its trustline.
 
+**Off-ramp direction, also proven live (`scripts/sep6_offramp_demo.py`):**
+withdrew USDC out of SettlementVault back to a wallet, then sent it through
+SEP-6 `/withdraw` back to the anchor for a (simulated) TRY payout — full
+round trip: TRY → USDC → vault → USDC → TRY. One real gotcha hit and
+solved along the way: `stellar tx new payment` has no memo flag at all
+(checked its `--help`), but a SEP-6 withdrawal is unusable without one —
+the anchor uses the memo to match an incoming payment back to a specific
+withdrawal request. Built and signed that payment with Python's
+`stellar_sdk` directly instead (`IdMemo`/`TextMemo`/`HashMemo` per the
+anchor's declared `memo_type`), confirmed completed with the anchor's own
+`external_transaction_id` and a real `stellar_transaction_id`.
+
 ### Not yet done
 
 Full signature-chain-to-Root-CA (stretch goal), `report_data` binding
