@@ -144,6 +144,14 @@ the depositor account first, and the vault's `--token` is the asset's SAC
 id — `CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA` — not the
 classic issuer address.)
 
+**Re-verified 2026-09-09** after the anchor shipped a `stellar.toml` version
+bump to 2.7.0: its `/v1` business API is now gone entirely (every `/v1/*`
+route 404s) — the anchor is SEP-only now, which our integration already
+was, so nothing broke. One new, genuinely useful behavior: depositing to an
+account with no USDC trustline yet now surfaces as SEP-6 status
+`pending_trust` instead of hanging or erroring — confirmed live by
+depositing to a fresh account before and after adding its trustline.
+
 ### Not yet done
 
 Full signature-chain-to-Root-CA (stretch goal), `report_data` binding
