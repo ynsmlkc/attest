@@ -39,6 +39,19 @@ to add `engine_address` — see below).
   auth-required) at registration time. This is what lets `SettlementVault`
   know *which caller* to trust for a given verified enclave, not just
   *whether* it's verified.
+- **2026-09-10 finding, since fixed:** `initialize` now also takes
+  `expected_app_measurement` (RTMR3), checked alongside MRTD. Deploying a
+  second, completely different app (`services/matching-engine`) on the same
+  dstack build produced an *identical* MRTD to the first demo CVM —  MRTD
+  only measures the virtual firmware, not application code, so it's shared
+  across every app on a given dstack version. RTMR3 (offset 520, 48 bytes)
+  is the field that actually covers the docker-compose/app content and so
+  differs per app — verified by computing its offset from the TD Report
+  Body's documented field layout and cross-checking the resulting slice
+  against Phala's own independently-reported `tcb_info.rtmr3`, exact match.
+  Before this fix, `expected_measurement` alone only proved "some app is
+  running on genuine TDX+dstack hardware," not "this specific app" — a real
+  gap in exactly the property the project exists to prove.
 
 ### `contracts/settlement-vault`
 
@@ -163,6 +176,74 @@ withdrawal request. Built and signed that payment with Python's
 `stellar_sdk` directly instead (`IdMemo`/`TextMemo`/`HashMemo` per the
 anchor's declared `memo_type`), confirmed completed with the anchor's own
 `external_transaction_id` and a real `stellar_transaction_id`.
+
+### `services/matching-engine` — a real matching engine running inside a TEE
+
+Everything above proves attestation *verification* — that a genuine,
+specific TEE quote checks out on-chain. Until this milestone, nothing in
+the project actually ran inside that TEE: the demo CVMs above only existed
+to produce a quote, and every `settle()` call was signed by an ordinary
+externally-held keypair (`attest-dev`) that a human typed the trade
+parameters for. This closes that gap.
+
+`services/matching-engine` is a small Node service, deployed as its own
+Phala Cloud TDX CVM, that:
+
+1. On boot, derives its own Stellar keypair via dstack's enclave-bound key
+   derivation (`DstackClient.getKey('attest/matching-engine/v1')`). The
+   32-byte result is used directly as an ed25519 seed
+   (`Keypair.fromRawEd25519Seed`) — verified against `@phala/dstack-sdk`'s
+   own published source (`dist/solana.js`): the modern `getKey()` path feeds
+   the raw key straight into `Keypair.fromSeed()` with no extra hashing (the
+   SHA256 step in its `toKeypairSecure` helper only applies to the
+   deprecated `deriveKey`/TLS-key path), so Solana's and Stellar's identical
+   ed25519 derivation apply the same way. This secret key never leaves the
+   process and is deterministic per (app measurement, key path) — no other
+   code can reproduce it.
+2. Holds a tiny in-memory order book and matches exact opposite pairs (no
+   partial fills, no price levels — the goal is proving the attestation
+   chain end to end, not building an exchange).
+3. On a match, builds, signs (with its own derived key), and submits
+   `SettlementVault.settle()` itself, via `@stellar/stellar-sdk`'s
+   `contract.Client` (confirmed its exact generated argument shapes —
+   `{tag, values}` enums, `Buffer` for `Bytes`/`BytesN`, `bigint` for
+   `i128` — by generating real TypeScript bindings from the deployed wasm
+   with `stellar contract bindings typescript`, not assumed).
+
+**`settlementVaultId`/`enclaveIdHex` are runtime config (`POST /configure`
+after boot), not compose-baked env vars.** Phala's RTMR3 is computed over
+the whole `docker-compose.yaml`, environment included — baking a specific
+vault ID in would mean every vault change produces a different measurement,
+which would then need re-registering against a new AttestationVerifier,
+which itself needs to already know the enclave's measurement: a circular
+dependency, hit and fixed live (confirmed empirically: removing those two
+env vars from the compose changed RTMR3 again, exactly as expected once
+understood).
+
+**Proven live, end to end, on testnet:**
+
+- Deployed to a real TDX CVM; genuinely derived engine address:
+  `GBYCHHAKPZO2MG552GJRCSFFWPUUFLHBDNB5DVHQQKBXLZBTKHASYUPZ`.
+- Docker image build gotchas hit and fixed: `@stellar/js-xdr` requires
+  Node ≥22 (bumped the Dockerfile off `node:20-alpine`); `@phala/dstack-sdk`
+  declares `@noble/curves` as an *optional* peer dependency but imports it
+  unconditionally at module load — added it (and `@noble/hashes`) as direct
+  dependencies; Phala Cloud pulls a pre-pushed image rather than building
+  locally, and the image must be `linux/amd64` (a plain `docker build` on
+  Apple Silicon produces `arm64`, which fails to pull on Phala's TDX
+  hosts with "no matching manifest") — built with
+  `docker buildx build --platform linux/amd64`.
+- Called `POST /register` on the running CVM with this exact deployment's
+  real, freshly-fetched quote (payload/signature/enclave_id) — the enclave
+  signed its own `register_verified_enclave` call with its derived key;
+  confirmed on-chain via `is_registered` and `get_engine_address` matching
+  the derived address.
+- Deposited real demo-token balances for two parties into SettlementVault,
+  then `POST`ed two exactly-opposite orders to the running CVM's `/orders`
+  endpoint. The engine matched them and settled on its own — real
+  transaction hash, no human specifying trade parameters — and the
+  resulting on-chain balances were confirmed exactly correct for both
+  parties.
 
 ### Not yet done
 

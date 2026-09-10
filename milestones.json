@@ -148,6 +148,28 @@
           "row": 0
         }
       ]
+    },
+    {
+      "id": "matching-engine",
+      "name": "TEE Icinde Gercek Eslestime Motoru",
+      "completed": true,
+      "furniture": [
+        {
+          "type": "DESK_FRONT",
+          "col": 12,
+          "row": 7
+        },
+        {
+          "type": "PC_FRONT_OFF",
+          "col": 13,
+          "row": 7
+        },
+        {
+          "type": "WOODEN_CHAIR_SIDE",
+          "col": 13,
+          "row": 8
+        }
+      ]
     }
   ]
 }
