@@ -1,0 +1,22 @@
+# Deployed to Phala Cloud as a real TDX CVM. Mounts dstack's guest-agent
+# socket so the service can derive its own Stellar keypair
+# (DstackClient.getKey) and fetch its own attestation quote -- both tied to
+# this exact container image's measurement. See services/matching-engine's
+# module doc comment (index.js) for why this exists.
+services:
+  matching-engine:
+    image: ynsmlkc/attest-matching-engine:latest
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+    ports:
+      - "80:80"
+    environment:
+      # SETTLEMENT_VAULT_ID / ENCLAVE_ID_HEX are deliberately NOT here — see
+      # index.js's module-level comment. They're set after boot via
+      # POST /configure so changing which vault this engine talks to never
+      # changes the measurement (RTMR3) a registered enclave is checked
+      # against.
+      - SOROBAN_RPC_URL=https://soroban-testnet.stellar.org
+      - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+      - ENGINE_KEY_PATH=attest/matching-engine/v1
+    restart: always
