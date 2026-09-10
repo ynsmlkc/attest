@@ -13,11 +13,20 @@ pub enum TeeType {
 
 #[contracttype]
 pub enum DataKey {
-    /// Measurement we consider "the real matching engine", set once at
+    /// MRTD — proves "a genuine TDX chip running dstack's OS", but is
+    /// IDENTICAL across every app on the same dstack version (it measures
+    /// the virtual firmware, not application code). Set once at
     /// `initialize` time by the admin. Stored as `Bytes` (not a fixed-size
     /// BytesN) because it's compared directly against a slice of the raw
-    /// signed payload — see `lib.rs::verify_quote`.
+    /// signed payload — see `lib.rs::check_payload`.
     ExpectedMeasurement,
+    /// RTMR3 — the measurement that actually differs per application (it
+    /// covers the docker-compose/app-compose content), confirmed empirically
+    /// on 2026-09-10: two different apps on the same dstack build produced
+    /// identical MRTD but different RTMR3. Checking MRTD alone only proves
+    /// "some app is running on a genuine TDX+dstack CVM", not "this specific
+    /// app" — RTMR3 is the field that actually pins the running code.
+    ExpectedAppMeasurement,
     /// Registered verified enclaves: enclave_id -> registration record.
     VerifiedEnclave(BytesN<32>),
     /// Reserved for the full signature-chain-to-Root-CA stretch goal

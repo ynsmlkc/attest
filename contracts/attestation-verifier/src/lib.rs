@@ -16,6 +16,10 @@ pub enum Error {
     /// `payload` isn't the length a real Intel DCAP v4 quote's signed
     /// portion should be — see `PAYLOAD_LEN`.
     BadPayloadLength = 4,
+    /// RTMR3 (the app-specific measurement) didn't match — the quote is
+    /// from a genuine TDX+dstack CVM (MRTD checked out), but running
+    /// different code than what was registered as trusted.
+    AppMeasurementMismatch = 5,
 }
 
 const ADMIN: &str = "admin";
@@ -32,15 +36,34 @@ const PAYLOAD_LEN: u32 = 632;
 /// payload. TDX's MRTD is SHA-384-sized — 48 bytes, not 32.
 const MRTD_OFFSET: u32 = 184;
 const MRTD_LEN: u32 = 48;
+/// Byte offset of RTMR3 within the signed payload — verified 2026-09-10 by
+/// computing it from the TD Report Body field layout (TEE_TCB_SVN(16) +
+/// MRSEAM(48) + MRSIGNERSEAM(48) + SEAMATTRIBUTES(8) + TDATTRIBUTES(8) +
+/// XFAM(8) + MRTD(48) + MRCONFIGID(48) + MROWNER(48) + MROWNERCONFIG(48) +
+/// RTMR0(48) + RTMR1(48) + RTMR2(48) = 520, relative to the payload, i.e.
+/// after the 48-byte quote header) and cross-checking the resulting slice
+/// against Phala's own independently-reported `tcb_info.rtmr3` for a real
+/// deployed CVM — exact match. Unlike MRTD (identical across every app on
+/// the same dstack build), RTMR3 covers the docker-compose/app-compose
+/// content and so differs per application — this is the field that actually
+/// proves *which* code is running, not just that *some* code is running on
+/// genuine TDX+dstack hardware.
+const RTMR3_OFFSET: u32 = 520;
+const RTMR3_LEN: u32 = 48;
 
 #[contract]
 pub struct AttestationVerifier;
 
 #[contractimpl]
 impl AttestationVerifier {
-    /// Sets the admin, the measurement we treat as "the real matching
-    /// engine" (see stellaridea2.md §4.1), and the Intel signing public key
-    /// quotes must verify against.
+    /// Sets the admin, the two measurements a quote must match, and the
+    /// Intel signing public key quotes must verify against.
+    ///
+    /// `expected_measurement` (MRTD) proves genuine TDX+dstack hardware;
+    /// `expected_app_measurement` (RTMR3) proves *which* application is
+    /// running on it — checking MRTD alone isn't enough, since it's
+    /// identical across every app on the same dstack build (confirmed
+    /// empirically 2026-09-10 — see `RTMR3_OFFSET`'s doc comment).
     ///
     /// M1 SCOPE NOTE (attest-hackathon-plan.md §3, gün 3-5): `intel_pk` here
     /// is a single Intel-issued signing key (e.g. the PCK cert's key),
@@ -51,6 +74,7 @@ impl AttestationVerifier {
         env: Env,
         admin: Address,
         expected_measurement: Bytes,
+        expected_app_measurement: Bytes,
         intel_pk: BytesN<65>,
     ) -> Result<(), Error> {
         if env.storage().instance().has(&ADMIN) {
@@ -61,6 +85,10 @@ impl AttestationVerifier {
         env.storage()
             .instance()
             .set(&DataKey::ExpectedMeasurement, &expected_measurement);
+        env.storage().instance().set(
+            &DataKey::ExpectedAppMeasurement,
+            &expected_app_measurement,
+        );
         env.storage().instance().set(&INTEL_KEY, &intel_pk);
         Ok(())
     }
@@ -151,6 +179,16 @@ impl AttestationVerifier {
         let actual_measurement = payload.slice(MRTD_OFFSET..MRTD_OFFSET + MRTD_LEN);
         if actual_measurement != expected_measurement {
             return Err(Error::MeasurementMismatch);
+        }
+
+        let expected_app_measurement: Bytes = env
+            .storage()
+            .instance()
+            .get(&DataKey::ExpectedAppMeasurement)
+            .ok_or(Error::NotInitialized)?;
+        let actual_app_measurement = payload.slice(RTMR3_OFFSET..RTMR3_OFFSET + RTMR3_LEN);
+        if actual_app_measurement != expected_app_measurement {
+            return Err(Error::AppMeasurementMismatch);
         }
 
         let intel_pk: BytesN<65> = env

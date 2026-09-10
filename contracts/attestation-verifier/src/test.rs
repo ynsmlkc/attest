@@ -19,16 +19,25 @@ use soroban_sdk::Env;
 ///   - MRTD_HEX = the TD measurement register, bytes 184..232 of the
 ///     payload (48 bytes — TDX's MRTD is SHA-384-sized, not 32 like an
 ///     earlier draft of this contract incorrectly assumed).
+///   - RTMR3_HEX = the app-specific measurement, bytes 520..568 of the
+///     payload. All-zero in this particular fixture — Automata's test
+///     vector appears to be a fixture where the runtime measured-boot
+///     extension steps were never actually performed, unlike a real
+///     deployed CVM's quote (see attest-hackathon-plan.md / README for the
+///     2026-09-10 finding that MRTD alone doesn't distinguish which
+///     application is running, only RTMR3 does).
 const PAYLOAD_HEX: &str = "040002008100000000000000939a7233f79c4ca9940a0db3957f0607000000000000000000000000000000000000000008010800000000000000000000000000bfb360ac8e6233a1bca1433caf7382d95c165b4a77fb00bf1435e5a08f300cdfead5ee68461afd9b6c728dce7534602d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000e700060000000000409c0cd3e63d9ea54d817cf851983a220131262664ac8cd02cc6a2e19fd291d2fdd0cc035d7789b982a43a92a4424c99000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c9ebdab3e239d7e06653ca5c3b2b686385c6817453a67f5b4876de0c9bf4d68d4aa142c26c1fd00bd676b47f409466001a4261e5e82bf4a4e91912bd84456385fbbf38748c4ab30310a48930841ca0d3baf411dc6bccd0b832c38a140739d235b55db2600cf494f40728e5d6b20af62002dc89e79ba37a009e30ff060f81fe21b672c85a0596d579d6439fa943584941000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e6114531e581b991d60bcef955343dd7253297f404eabeeb5bcd968ac695ddd6afddde1485cd20dd00af75ef4ee483af08eae025bfd2781a1057538bfbe2d977";
 const SIGNATURE_HEX: &str = "8a33e55bc52328456cdfd05f708f75050ae26494eacb0d8f528087d5da9baf984af11c6ae38fe09a8eb259b47fd95e15fe221050855f6e58d528e2e168a21cdd";
 const PUBKEY_HEX: &str = "04afb6e3b0503046658a28afaf3cf1a6c24360a222fa45c68dd7b8906795e40335ef2d5ed805aa7e2c0ff58632d6ec402cbe1e597d098b36cde2950c62e4a84a43";
 const MRTD_HEX: &str = "409c0cd3e63d9ea54d817cf851983a220131262664ac8cd02cc6a2e19fd291d2fdd0cc035d7789b982a43a92a4424c99";
+const RTMR3_HEX: &str = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
 struct RealQuote {
     payload: Bytes,
     signature: BytesN<64>,
     pubkey: BytesN<65>,
     mrtd: Bytes,
+    rtmr3: Bytes,
 }
 
 fn real_quote(env: &Env) -> RealQuote {
@@ -36,12 +45,14 @@ fn real_quote(env: &Env) -> RealQuote {
     let signature_bytes = hex::decode(SIGNATURE_HEX).unwrap();
     let pubkey_bytes = hex::decode(PUBKEY_HEX).unwrap();
     let mrtd_bytes = hex::decode(MRTD_HEX).unwrap();
+    let rtmr3_bytes = hex::decode(RTMR3_HEX).unwrap();
 
     RealQuote {
         payload: Bytes::from_slice(env, &payload_bytes),
         signature: BytesN::<64>::from_array(env, &signature_bytes.try_into().unwrap()),
         pubkey: BytesN::<65>::from_array(env, &pubkey_bytes.try_into().unwrap()),
         mrtd: Bytes::from_slice(env, &mrtd_bytes),
+        rtmr3: Bytes::from_slice(env, &rtmr3_bytes),
     }
 }
 
@@ -52,7 +63,7 @@ fn setup(env: &Env) -> (AttestationVerifierClient<'_>, RealQuote) {
     let quote = real_quote(env);
 
     let admin = Address::generate(env);
-    client.initialize(&admin, &quote.mrtd, &quote.pubkey);
+    client.initialize(&admin, &quote.mrtd, &quote.rtmr3, &quote.pubkey);
 
     (client, quote)
 }
@@ -62,7 +73,7 @@ fn initialize_rejects_double_init() {
     let env = Env::default();
     let (client, quote) = setup(&env);
     let admin = Address::generate(&env);
-    let result = client.try_initialize(&admin, &quote.mrtd, &quote.pubkey);
+    let result = client.try_initialize(&admin, &quote.mrtd, &quote.rtmr3, &quote.pubkey);
     assert!(result.is_err());
 }
 
@@ -91,8 +102,28 @@ fn verify_quote_rejects_wrong_measurement() {
     let quote = real_quote(&env);
 
     let admin = Address::generate(&env);
-    let wrong_measurement = Bytes::from_array(&env, &[0u8; 48]);
-    client.initialize(&admin, &wrong_measurement, &quote.pubkey);
+    let wrong_measurement = Bytes::from_array(&env, &[1u8; 48]);
+    client.initialize(&admin, &wrong_measurement, &quote.rtmr3, &quote.pubkey);
+
+    let result = client.try_verify_quote(&quote.payload, &quote.signature);
+    assert!(result.is_err());
+}
+
+/// The 2026-09-10 finding, guarded: two real CVMs can share an identical
+/// MRTD (same dstack build) while running completely different code — only
+/// RTMR3 (the app-compose measurement) actually distinguishes them. A quote
+/// with the right MRTD but wrong RTMR3 must be rejected.
+#[test]
+fn verify_quote_rejects_wrong_app_measurement() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let contract_id = env.register(AttestationVerifier, ());
+    let client = AttestationVerifierClient::new(&env, &contract_id);
+    let quote = real_quote(&env);
+
+    let admin = Address::generate(&env);
+    let wrong_app_measurement = Bytes::from_array(&env, &[1u8; 48]);
+    client.initialize(&admin, &quote.mrtd, &wrong_app_measurement, &quote.pubkey);
 
     let result = client.try_verify_quote(&quote.payload, &quote.signature);
     assert!(result.is_err());

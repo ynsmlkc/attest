@@ -21,17 +21,21 @@ const PAYLOAD_HEX: &str = "040002008100000000000000939a7233f79c4ca9940a0db3957f0
 const SIGNATURE_HEX: &str = "8a33e55bc52328456cdfd05f708f75050ae26494eacb0d8f528087d5da9baf984af11c6ae38fe09a8eb259b47fd95e15fe221050855f6e58d528e2e168a21cdd";
 const PUBKEY_HEX: &str = "04afb6e3b0503046658a28afaf3cf1a6c24360a222fa45c68dd7b8906795e40335ef2d5ed805aa7e2c0ff58632d6ec402cbe1e597d098b36cde2950c62e4a84a43";
 const MRTD_HEX: &str = "409c0cd3e63d9ea54d817cf851983a220131262664ac8cd02cc6a2e19fd291d2fdd0cc035d7789b982a43a92a4424c99";
+// All-zero in this fixture — see attestation-verifier's test.rs for why.
+const RTMR3_HEX: &str = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
 
-fn real_quote(env: &Env) -> (Bytes, BytesN<64>, BytesN<65>, Bytes) {
+fn real_quote(env: &Env) -> (Bytes, BytesN<64>, BytesN<65>, Bytes, Bytes) {
     let payload = hex::decode(PAYLOAD_HEX).unwrap();
     let signature = hex::decode(SIGNATURE_HEX).unwrap();
     let pubkey = hex::decode(PUBKEY_HEX).unwrap();
     let mrtd = hex::decode(MRTD_HEX).unwrap();
+    let rtmr3 = hex::decode(RTMR3_HEX).unwrap();
     (
         Bytes::from_slice(env, &payload),
         BytesN::<64>::from_array(env, &signature.try_into().unwrap()),
         BytesN::<65>::from_array(env, &pubkey.try_into().unwrap()),
         Bytes::from_slice(env, &mrtd),
+        Bytes::from_slice(env, &rtmr3),
     )
 }
 
@@ -82,9 +86,9 @@ fn setup<'a>(env: &'a Env, oracle: Option<Address>, max_deviation_bps: u32) -> T
 
     let verifier_id = env.register(AttestationVerifier, ());
     let verifier = RealVerifierClient::new(env, &verifier_id);
-    let (payload, signature, pubkey, mrtd) = real_quote(env);
+    let (payload, signature, pubkey, mrtd, rtmr3) = real_quote(env);
     let verifier_admin = Address::generate(env);
-    verifier.initialize(&verifier_admin, &mrtd, &pubkey);
+    verifier.initialize(&verifier_admin, &mrtd, &rtmr3, &pubkey);
 
     let engine = Address::generate(env);
     let enclave_id = BytesN::<32>::from_array(env, &[1u8; 32]);
