@@ -1,0 +1,66 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-bg: #08080c;
+  --color-surface: #101018;
+  --color-surface-2: #16161f;
+  --color-border: #24242f;
+  --color-border-hover: #34343f;
+  --color-text: #f2f2f6;
+  --color-text-dim: #8d8da0;
+  --color-text-faint: #5c5c6b;
+
+  --color-brand: #7c6cff;
+  --color-brand-dim: #5b4fd6;
+  --color-brand-glow: #7c6cff33;
+
+  --color-success: #34d399;
+  --color-danger: #fb7185;
+  --color-warning: #fbbf6a;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(124, 108, 255, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(52, 211, 153, 0.06), transparent);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::selection {
+  background: var(--color-brand-glow);
+}
+
+.mono-nums {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse-dot {
+  animation: pulse-dot 1.8s ease-in-out infinite;
+}
