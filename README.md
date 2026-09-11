@@ -245,6 +245,14 @@ understood).
   resulting on-chain balances were confirmed exactly correct for both
   parties.
 
+### `web` — trading UI
+
+A real frontend (Vite + React + Tailwind), not a mockup — see `web/README.md`.
+Live Reflector prices for real testnet XLM/USDC, an on-chain attestation
+panel that live-checks the matching-engine's registered enclave, and
+deposit/withdraw/order-submission wired to the actual deployed contracts
+and CVM, signed via Freighter.
+
 ### Not yet done
 
 Full signature-chain-to-Root-CA (stretch goal), `report_data` binding
