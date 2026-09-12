@@ -33,26 +33,37 @@ export const REFLECTOR_DECIMALS = 14;
 
 export interface TokenInfo {
   code: string;
+  name: string;
   sacId: string;
   /** Symbol Reflector's Other(Symbol) variant expects for this asset. */
   reflectorSymbol: string;
   decimals: number;
+  /** Real logo, from Trust Wallet's public assets repo -- see web/README.md. */
+  logo: string;
+  /** Accent used for this token's monogram ring when `logo` fails to load. */
+  tone: string;
 }
 
 // Real, recognizable testnet assets -- not synthetic demo tokens -- so the
 // app trades something a viewer already knows the meaning of.
 export const NATIVE_XLM: TokenInfo = {
   code: "XLM",
+  name: "Stellar Lumens",
   sacId: "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC",
   reflectorSymbol: "XLM",
   decimals: 7,
+  logo: "/tokens/xlm.png",
+  tone: "#DFA94F",
 };
 
 export const TESTNET_USDC: TokenInfo = {
   code: "USDC",
+  name: "USD Coin",
   sacId: "CBIELTK6YBZJU5UP2WWQEUCYKLPU6AUNZ2BQ4WWFEIE3USCIHMXQDAMA",
   reflectorSymbol: "USDC",
   decimals: 7,
+  logo: "/tokens/usdc.png",
+  tone: "#5B8DB8",
 };
 
 export const TRADABLE_TOKENS: TokenInfo[] = [NATIVE_XLM, TESTNET_USDC];
