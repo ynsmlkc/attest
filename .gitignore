@@ -1,0 +1,15 @@
+# Rust's output directory
+target
+
+# Local settings
+.soroban
+.stellar
+
+# Local secrets -- never commit
+secrets.local.md
+
+# Dependencies
+node_modules
+
+# Node
+node_modules
