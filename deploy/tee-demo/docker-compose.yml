@@ -1,0 +1,14 @@
+# Minimal CVM used only to produce ONE genuine, freshly-generated Intel TDX
+# attestation quote for Attest's "real TEE deployment" milestone — not part
+# of the SettlementVault matching-engine design itself. Mounts dstack's
+# guest-agent Unix socket so a plain curl inside the container can request
+# a real quote (see docs.phala.com/dstack/getting-started —
+# "Getting TDX quote in docker container"). Kept running via `sleep infinity`
+# purely so `phala ssh` + `docker exec` has a live container to run curl in.
+services:
+  quoter:
+    image: curlimages/curl:latest
+    volumes:
+      - /var/run/dstack.sock:/var/run/dstack.sock
+    entrypoint: ["sleep", "infinity"]
+    restart: always
