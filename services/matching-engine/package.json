@@ -1,0 +1,18 @@
+{
+  "name": "attest-matching-engine",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Runs inside a real Phala Cloud TDX CVM. Derives its own Stellar keypair from dstack's enclave-bound key derivation (never leaves the enclave), matches simple two-sided orders, and signs SettlementVault.settle() calls with that derived key. Not a general-purpose exchange -- a minimal, real proof that the settlement authority (`engine_address`) genuinely comes from inside a verified TEE, not from a key we control externally.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@phala/dstack-sdk": "0.5.8",
+    "@noble/curves": "^1.8.1",
+    "@noble/hashes": "^1.6.1",
+    "@stellar/stellar-sdk": "17.0.1",
+    "express": "^4.21.2"
+  }
+}
