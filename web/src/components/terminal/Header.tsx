@@ -38,10 +38,15 @@ export function Header({ address, connecting, onConnect, onDisconnect, engineOnl
 
   return (
     <div className="flex h-14 flex-none items-center gap-4 border-b border-border bg-surface px-5">
-      <div className="flex items-center gap-2.5">
+      <button
+        type="button"
+        onClick={() => onNavigate("trade")}
+        aria-label="Attest — go to Trade"
+        className="flex cursor-pointer items-center gap-2.5 transition hover:opacity-80"
+      >
         <img src="/logo-mark.svg" alt="" className="h-[36px] w-[36px]" />
         <div className="font-display text-[19px] font-normal tracking-[-0.01em] text-text">Attest</div>
-      </div>
+      </button>
       <div className="mono border border-border-2 px-2 py-1 text-[9px] tracking-[0.14em] text-text-dim uppercase">
         Dark Pool · Testnet
       </div>

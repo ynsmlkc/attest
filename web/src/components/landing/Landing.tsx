@@ -70,9 +70,14 @@ export function Landing({ onLaunch }: Props) {
       <section className="relative flex min-h-screen flex-col overflow-hidden bg-[#0a0f0c] text-white">
         <HeroVisual />
         <nav className="relative z-10 flex items-center justify-between px-6 py-7 sm:px-10">
-          <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={handleLaunch}
+            aria-label="Attest — open the app"
+            className="flex cursor-pointer items-center gap-1.5 transition hover:opacity-90"
+          >
             <img src="/logo-badge.svg" alt="Attest" className="h-16 w-auto object-contain md:h-28" />
-          </div>
+          </button>
           <div className="mono absolute left-1/2 hidden -translate-x-1/2 items-center text-[11px] font-medium tracking-[0.24em] text-white/90 uppercase sm:flex">
             <span>Sealed</span>
             <span className="mx-2.5 text-xs font-bold tracking-normal text-[#4ade80]/90">›››</span>
