@@ -1,0 +1,487 @@
+<title>Attest</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #0a0f0c;
+    --surface: #10160f;
+    --surface-2: #141c13;
+    --border: #232b21;
+    --text: #eef0ea;
+    --text-dim: #9aa39a;
+    --text-faint: #6b756b;
+    --amber: #dfa94f;
+    --amber-hi: #f0c77e;
+    --green: #4fb286;
+    --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --font-body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    overflow: hidden;
+  }
+
+  body {
+    padding-inline: 16px;
+  }
+
+  /* faint ambient grid, ties the deck to the product's own visual language */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(rgba(223, 169, 79, 0.06) 1px, transparent 1px),
+      radial-gradient(rgba(79, 178, 134, 0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: 0 0, 13px 13px;
+  }
+
+  .deck {
+    position: relative;
+    z-index: 1;
+    height: 100%;
+    width: 100%;
+    max-width: 1000px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .progress {
+    flex: none;
+    height: 3px;
+    background: var(--border);
+    margin-top: env(safe-area-inset-top, 0px);
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--amber), var(--green));
+    transition: width 320ms cubic-bezier(.4,0,.2,1);
+  }
+
+  .slides {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(20px, 5vw, 64px) clamp(4px, 2vw, 24px);
+    opacity: 0;
+  }
+  .slide.active {
+    display: flex;
+    opacity: 1;
+    animation: slideIn 420ms cubic-bezier(.4,0,.2,1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.active { animation: none; }
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 14px;
+  }
+  .eyebrow.green { color: var(--green); }
+  .eyebrow.dim { color: var(--text-faint); }
+
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 500; line-height: 1.08; margin: 0; text-wrap: balance; }
+  .slide h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); font-weight: 300; }
+  .slide h2 { font-size: clamp(1.7rem, 4.4vw, 3rem); }
+
+  p { font-size: clamp(15px, 1.9vw, 19px); line-height: 1.55; color: var(--text-dim); max-width: 640px; margin: 0; }
+  p + p { margin-top: 12px; }
+  strong { color: var(--text); font-weight: 600; }
+
+  .quote {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(1.3rem, 3.2vw, 2rem);
+    line-height: 1.4;
+    color: var(--text);
+    border-left: 2px solid var(--amber);
+    padding-left: 22px;
+    max-width: 720px;
+    text-wrap: balance;
+  }
+  .attrib { font-family: var(--font-mono); font-size: 12px; color: var(--text-faint); margin-top: 14px; letter-spacing: 0.02em; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 5px 11px;
+    border-radius: 4px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex: none; }
+  .dot.amber { background: var(--amber); }
+
+  .cols { display: grid; gap: 14px; margin-top: 26px; width: 100%; max-width: 780px; }
+  .cols.three { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 640px) { .cols.three { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .card.win { border-color: rgba(79,178,134,0.5); background: linear-gradient(180deg, rgba(79,178,134,0.08), transparent); }
+  .card h4 { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text); margin: 0 0 8px; }
+  .card p { font-size: 13.5px; margin: 0; }
+  .verdict { font-family: var(--font-mono); font-size: 11px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); color: var(--text-faint); }
+  .card.win .verdict { color: var(--green); }
+
+  ul.plain { list-style: none; margin: 22px 0 0; padding: 0; display: flex; flex-direction: column; gap: 11px; max-width: 620px; }
+  ul.plain li { display: flex; gap: 11px; align-items: baseline; font-size: 15px; color: var(--text-dim); }
+  ul.plain li::before { content: "—"; color: var(--amber); flex: none; }
+  ul.plain li strong { color: var(--text); }
+
+  .steps { display: flex; gap: 0; margin-top: 30px; width: 100%; max-width: 780px; }
+  .step { flex: 1; position: relative; padding: 0 16px 0 0; }
+  .step:not(:last-child)::after {
+    content: ""; position: absolute; top: 13px; right: -1px; width: calc(100% - 34px);
+    border-top: 1px dashed var(--border);
+  }
+  .step-n { font-family: var(--font-mono); font-size: 11px; color: var(--bg); background: var(--amber);
+    width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-weight: 600; }
+  .step h4 { font-size: 15px; margin: 0 0 6px; color: var(--text); font-weight: 600; }
+  .step p { font-size: 13px; margin: 0; }
+
+  .stat-row { display: flex; gap: 34px; margin-top: 28px; flex-wrap: wrap; }
+  .stat b { font-family: var(--font-mono); font-size: clamp(1.6rem, 3.4vw, 2.4rem); color: var(--amber); display: block; font-weight: 600; }
+  .stat span { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; width: 100%; }
+  @media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+
+  .honesty-row { display: flex; gap: 14px; align-items: flex-start; margin-top: 16px; max-width: 660px; }
+  .honesty-row .mark { font-family: var(--font-mono); font-size: 13px; flex: none; width: 22px; padding-top: 2px; }
+  .honesty-row.done .mark { color: var(--green); }
+  .honesty-row.open .mark { color: var(--amber); }
+  .honesty-row p { margin: 0; font-size: 14.5px; }
+
+  .footer-tag {
+    position: absolute; bottom: clamp(20px, 5vw, 64px); left: clamp(4px, 2vw, 24px);
+    font-family: var(--font-mono); font-size: 10.5px; color: var(--text-faint); letter-spacing: 0.06em;
+  }
+
+  .nav {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 4px calc(14px + env(safe-area-inset-bottom, 0px));
+    font-family: var(--font-mono);
+  }
+  .nav-btns { display: flex; gap: 8px; }
+  .nav button {
+    font-family: var(--font-mono);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 150ms, color 150ms;
+  }
+  .nav button:hover { border-color: var(--amber); color: var(--amber-hi); }
+  .nav button:disabled { opacity: 0.3; cursor: default; border-color: var(--border); color: var(--text-dim); }
+  .nav button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+  .counter { font-size: 11.5px; color: var(--text-faint); letter-spacing: 0.06em; }
+  .counter b { color: var(--text); }
+
+  .dots { display: flex; gap: 6px; }
+  .dots button {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--border); border: none; padding: 0; cursor: pointer;
+  }
+  .dots button.on { background: var(--amber); }
+
+  /* Turkish practice subtitles -- temporary, delete this block and every
+     .tr element before the real presentation. */
+  .tr {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: #8a9a86;
+    margin-top: 5px;
+    padding-left: 10px;
+    border-left: 2px dashed #3a4536;
+    max-width: 620px;
+  }
+  .tr b { color: #b9c9b4; font-style: normal; font-weight: 600; font-family: var(--font-mono); font-size: 0.72em; letter-spacing: 0.06em; margin-right: 6px; }
+  .card .tr, .step .tr { font-size: 0.78em; margin-top: 6px; padding-left: 8px; }
+  li .tr { display: block; margin-top: 4px; }
+</style>
+
+<div class="grid-bg"></div>
+<div class="deck">
+  <div class="progress"><div class="progress-bar" id="bar" style="width:10%"></div></div>
+
+  <div class="slides" id="slides">
+
+    <section class="slide active">
+      <div class="eyebrow dim">Stellar · Soroban · Intel TDX</div>
+      <h1>Attest</h1>
+      <p style="margin-top:14px; font-size:19px; max-width:560px;">A dark pool that doesn't just <em>claim</em> it's private. It <strong>proves</strong> it, on-chain, with real hardware.</p>
+      <div class="tr"><b>TR</b>Gizli olduğunu sadece iddia etmeyen bir dark pool. Bunu zincir üzerinde, gerçek donanımla kanıtlıyor.</div>
+      <div class="footer-tag">01 — Title</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Where this idea comes from</div>
+      <h2>It started with a Stellar Foundation blog post.</h2>
+      <p style="margin-top:16px;">Published <strong>Feb 23, 2026</strong>. Written by <strong>Yan Michalevsky</strong> — co‑founder and CTO of Anjuna Security, a real company that builds secure hardware enclaves.</p>
+      <div class="tr"><b>TR</b>23 Şubat 2026'da yayınlandı. Yazarı Yan Michalevsky — güvenli donanım enclave'leri üreten gerçek bir şirket olan Anjuna Security'nin kurucu ortağı ve CTO'su.</div>
+      <p>Not a random blog post. Written by someone whose full‑time job is this exact technology.</p>
+      <div class="tr"><b>TR</b>Rastgele bir blog yazısı değil. Tam zamanlı işi tam olarak bu teknoloji olan biri tarafından yazılmış.</div>
+      <div class="tag" style="margin-top:22px;"><span class="dot amber"></span>"Building a Dark Pool on Stellar: MPC, FHE, and TEEs Compared"</div>
+      <div class="footer-tag">02 — The source</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Three ways to hide a trade</div>
+      <h2>The post compares three approaches.</h2>
+      <div class="cols three">
+        <div class="card">
+          <h4>MPC</h4>
+          <p>Multiple parties compute together. Nobody sees the whole trade.</p>
+          <div class="tr"><b>TR</b>Birden fazla taraf birlikte hesaplar. Kimse trade'in tamamını görmez.</div>
+          <div class="verdict">Breaks down past ~100 traders</div>
+          <div class="tr">~100 trader'dan sonra çöküyor</div>
+        </div>
+        <div class="card">
+          <h4>FHE</h4>
+          <p>Math on encrypted data. Never decrypted.</p>
+          <div class="tr"><b>TR</b>Şifreli veri üzerinde matematik. Hiç şifresi çözülmüyor.</div>
+          <div class="verdict">204 min for one match round. Too slow.</div>
+          <div class="tr">Bir eşleşme turu 204 dakika. Çok yavaş.</div>
+        </div>
+        <div class="card win">
+          <h4>TEE ✓</h4>
+          <p>A real, sealed chip. Native speed.</p>
+          <div class="tr"><b>TR</b>Gerçek, mühürlü bir çip. Doğal hız.</div>
+          <div class="verdict">"The pragmatic choice for production today."</div>
+          <div class="tr">"Bugün production için pragmatik seçim."</div>
+        </div>
+      </div>
+      <div class="footer-tag">03 — The comparison</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">The post picks TEE. Then it says one thing is missing.</div>
+      <div class="quote">"A stronger design would have the settlement contract independently verify attestation quotes — preventing a compromised matching engine from being swapped in, even if clients skip verification."</div>
+      <div class="attrib">— the exact gap this project builds</div>
+      <p style="margin-top:22px; max-width:600px;">In plain words: <strong>most systems just trust the client to check the proof.</strong> The smart contract itself should check it. Nobody had built that. Yet.</p>
+      <div class="tr"><b>TR</b>Basitçe: çoğu sistem, kanıtı kontrol etmeyi kullanıcı tarafına (client'a) güvenerek bırakıyor. Asıl akıllı kontratın kendisi bunu kontrol etmeli. Bunu henüz kimse yapmamıştı.</div>
+      <div class="footer-tag">04 — The gap</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Is this gap actually still open?</div>
+      <h2>We checked. It is.</h2>
+      <p>The blog post links its own demo code — <strong>stellar‑dark‑pool</strong>, by the same author.</p>
+      <div class="tr"><b>TR</b>Blog yazısı kendi demo kodunu linkliyor — stellar-dark-pool, aynı yazar tarafından.</div>
+      <div class="stat-row">
+        <div class="stat"><b>Jan 21</b><span>Last commit (2026)</span></div>
+        <div class="stat"><b>0</b><span>Commits since the blog post</span></div>
+        <div class="stat"><b>0</b><span>Stars, forks, issues</span></div>
+        <div class="stat"><b>7 mo</b><span>Nobody has closed it</span></div>
+      </div>
+      <div class="tr" style="margin-top:8px;">Son commit 21 Ocak · Blog'dan sonra 0 commit · 0 star/fork/issue · 7 aydır kimse kapatmadı</div>
+      <p style="margin-top:20px;">Its own docs admit it: <em>"No on‑chain verifier contract... verification happens before trusting the HTTPS connection, not post‑deployment on‑chain."</em></p>
+      <div class="tr"><b>TR</b>Kendi dokümanı bile itiraf ediyor: "Zincir üstünde bir doğrulayıcı kontrat yok... doğrulama HTTPS bağlantısına güvenilmeden önce oluyor, deploy sonrası zincirde değil."</div>
+      <div class="footer-tag">05 — Confirming the gap</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow green">What we built</div>
+      <h2>Attest closes it. Three real steps.</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-n">1</div>
+          <h4>Sealed</h4>
+          <p>Both traders sign their order off‑chain. Nobody sees it — except the enclave.</p>
+          <div class="tr"><b>TR</b>Her iki trader da emrini zincir dışında imzalar. Kimse görmez — enclave hariç.</div>
+        </div>
+        <div class="step">
+          <div class="step-n">2</div>
+          <h4>Attested</h4>
+          <p>The contract checks a real Intel TDX quote itself. On‑chain. With real cryptography.</p>
+          <div class="tr"><b>TR</b>Kontrat, gerçek bir Intel TDX quote'unu kendisi kontrol eder. Zincir üstünde. Gerçek kriptografiyle.</div>
+        </div>
+        <div class="step">
+          <div class="step-n">3</div>
+          <h4>Settled</h4>
+          <p>One atomic Soroban transaction. Both balances swap, or nothing happens.</p>
+          <div class="tr"><b>TR</b>Tek bir atomik Soroban işlemi. Ya iki bakiye de takas olur, ya hiçbir şey olmaz.</div>
+        </div>
+      </div>
+      <div class="footer-tag">06 — What we built</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow">Not a mockup</div>
+      <h2>Everything below actually ran, on testnet.</h2>
+      <ul class="plain">
+        <li>A <strong>real Intel TDX chip</strong>, rented from Phala Cloud — not simulated.<div class="tr"><b>TR</b>Phala Cloud'dan kiralanmış gerçek bir Intel TDX çip — simülasyon değil.</div></li>
+        <li>Its quote, <strong>verified on Soroban</strong> using native secp256r1 cryptography.<div class="tr"><b>TR</b>Quote'u, Soroban'ın kendi secp256r1 kriptografisiyle doğrulanıyor.</div></li>
+        <li>A matching engine whose signing key was <strong>born inside the enclave</strong> and has never left it.<div class="tr"><b>TR</b>İmzalama anahtarı enclave'in içinde doğmuş ve hiç dışarı çıkmamış bir matching engine.</div></li>
+        <li>Real trades. Real Stellar testnet transaction hashes. Anyone can look them up.<div class="tr"><b>TR</b>Gerçek trade'ler. Gerçek Stellar testnet işlem hash'leri. Herkes kontrol edebilir.</div></li>
+      </ul>
+      <div class="footer-tag">07 — Proof, not claims</div>
+    </section>
+
+    <section class="slide">
+      <div class="split">
+        <div>
+          <div class="eyebrow amber" style="color:var(--amber)">We also found a real bug</div>
+          <h2 style="font-size:clamp(1.5rem,3.6vw,2.4rem)">A security review found a hijack risk. We fixed it the same day.</h2>
+          <p style="margin-top:14px;">Anyone could replay a public quote and steal control of an already‑registered enclave. We closed it — and proved the fix live, with a real attacker identity trying and failing.</p>
+          <div class="tr"><b>TR</b>Herkes public bir quote'u tekrar oynatıp zaten kayıtlı bir enclave'in kontrolünü çalabilirdi. Bunu kapattık — ve gerçek bir saldırgan kimliğiyle canlıda deneyip başarısız olduğunu kanıtladık.</div>
+        </div>
+        <div class="card" style="max-width:320px;">
+          <h4>Same rigor, applied to ourselves</h4>
+          <p style="margin-top:6px;">We don't just build the feature. We try to break it, and show the receipts either way.</p>
+          <div class="tr"><b>TR</b>Sadece özelliği yapmıyoruz. Onu kırmaya çalışıyoruz, sonucu ne olursa olsun kanıtını gösteriyoruz.</div>
+        </div>
+      </div>
+      <div class="footer-tag">08 — Security rigor</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow dim">Being honest about what's left</div>
+      <h2>The blog post named two gaps. We closed one.</h2>
+      <div class="honesty-row done">
+        <div class="mark">✓</div>
+        <div>
+          <p><strong>Contract‑level attestation verification</strong> — done, live, proven on testnet.</p>
+          <div class="tr"><b>TR</b>Kontrat seviyesinde attestation doğrulaması — tamamlandı, canlı, testnette kanıtlandı.</div>
+        </div>
+      </div>
+      <div class="honesty-row open">
+        <div class="mark">○</div>
+        <div>
+          <p><strong>OS kernel reproducible‑build verification</strong> — still open. Even the original author hasn't done this yet. We say so, instead of pretending otherwise.</p>
+          <div class="tr"><b>TR</b>OS kernel'inin reproducible-build doğrulaması — hâlâ açık. Orijinal yazar bile bunu henüz yapmadı. Bunu olduğu gibi söylüyoruz, başka türlü davranmak yerine.</div>
+        </div>
+      </div>
+      <div class="footer-tag">09 — What's honestly still open</div>
+    </section>
+
+    <section class="slide">
+      <div class="eyebrow green">Closing thought</div>
+      <div class="quote">"The remaining work is engineering, not research."</div>
+      <div class="attrib">— the blog post itself, Feb 2026</div>
+      <h2 style="margin-top:26px; font-size:clamp(1.6rem,4vw,2.6rem)">Seven months later, we did the engineering.</h2>
+      <div class="tr" style="margin-top:12px;"><b>TR</b>Yedi ay sonra, mühendisliği biz yaptık.</div>
+      <div class="footer-tag">10 — Attest</div>
+    </section>
+
+  </div>
+
+  <div class="nav">
+    <button id="prev" aria-label="Previous slide">←</button>
+    <div style="display:flex; align-items:center; gap:16px;">
+      <div class="counter"><b id="cur">1</b> / <span id="tot">10</span></div>
+      <div class="dots" id="dots"></div>
+    </div>
+    <button id="next" aria-label="Next slide">→</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var i = 0;
+
+  var bar = document.getElementById('bar');
+  var cur = document.getElementById('cur');
+  var tot = document.getElementById('tot');
+  var prevBtn = document.getElementById('prev');
+  var nextBtn = document.getElementById('next');
+  var dotsWrap = document.getElementById('dots');
+
+  tot.textContent = total;
+
+  for (var d = 0; d < total; d++) {
+    var b = document.createElement('button');
+    b.setAttribute('aria-label', 'Go to slide ' + (d + 1));
+    (function (idx) { b.addEventListener('click', function () { go(idx); }); })(d);
+    dotsWrap.appendChild(b);
+  }
+  var dotEls = Array.prototype.slice.call(dotsWrap.children);
+
+  function render() {
+    slides.forEach(function (s, idx) { s.classList.toggle('active', idx === i); });
+    dotEls.forEach(function (d, idx) { d.classList.toggle('on', idx === i); });
+    bar.style.width = (((i + 1) / total) * 100) + '%';
+    cur.textContent = i + 1;
+    prevBtn.disabled = i === 0;
+    nextBtn.disabled = i === total - 1;
+    try { localStorage.setItem('attest-deck-slide', String(i)); } catch (e) {}
+  }
+
+  function go(idx) {
+    i = Math.max(0, Math.min(total - 1, idx));
+    render();
+  }
+
+  prevBtn.addEventListener('click', function () { go(i - 1); });
+  nextBtn.addEventListener('click', function () { go(i + 1); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight' || e.key === ' ') { go(i + 1); e.preventDefault(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'Backspace') { go(i - 1); e.preventDefault(); }
+  });
+
+  var startX = null;
+  document.addEventListener('touchstart', function (e) { startX = e.touches[0].clientX; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (startX === null) return;
+    var dx = e.changedTouches[0].clientX - startX;
+    if (Math.abs(dx) > 50) go(dx < 0 ? i + 1 : i - 1);
+    startX = null;
+  }, { passive: true });
+
+  var saved = 0;
+  try { saved = parseInt(localStorage.getItem('attest-deck-slide') || '0', 10) || 0; } catch (e) {}
+  go(saved);
+})();
+</script>
